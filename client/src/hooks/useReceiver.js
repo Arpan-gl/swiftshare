@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { getSocket } from '../utils/socket';
 import { sha256, ChunkStore, assembleAndDownload } from '../utils/fileUtils';
 
+const API_BASE = (process.env.REACT_APP_SERVER_URL || '').replace(/\/$/, '');
+
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -39,7 +41,7 @@ export function useReceiver(transferId) {
   async function loadSession() {
     setStatus('loading');
     try {
-      const res = await fetch(`/api/session/${transferId}`);
+      const res = await fetch(`${API_BASE}/api/session/${transferId}`);
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Transfer not found');

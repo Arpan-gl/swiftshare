@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { getSocket } from '../utils/socket';
 import { CHUNK_SIZE, getTotalChunks, sha256 } from '../utils/fileUtils';
 
+const API_BASE = (process.env.REACT_APP_SERVER_URL || '').replace(/\/$/, '');
+
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -76,7 +78,7 @@ export function useSender() {
 
     try {
       const totalChunks = getTotalChunks(file.size);
-      const res = await fetch('/api/session', {
+      const res = await fetch(`${API_BASE}/api/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

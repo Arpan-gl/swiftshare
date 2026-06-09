@@ -4,7 +4,8 @@ let socket = null;
 
 export function getSocket() {
   if (!socket) {
-    socket = io(process.env.REACT_APP_SERVER_URL || 'http://localhost:3001', {
+    const serverUrl = (process.env.REACT_APP_SERVER_URL || 'http://localhost:3001').replace(/\/$/, '');
+    socket = io(serverUrl, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 10,
