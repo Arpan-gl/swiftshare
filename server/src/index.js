@@ -3,19 +3,19 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 const app = express();
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: [CORS_ORIGIN,'http://localhost:3001'],
     methods: ['GET', 'POST'],
   },
   maxHttpBufferSize: 1e8, // 100 MB socket buffer
 });
 
-app.use(cors({ origin: ['http://localhost:3000'] }));
+app.use(cors({ origin: [CORS_ORIGIN] }));
 app.use(express.json());
 
 // In-memory session store (use Redis in production)
