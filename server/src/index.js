@@ -6,26 +6,52 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const httpServer = createServer(app);
 
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()).filter(Boolean)
-  : true;
+const corsOrigins = new Set([
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://swiftshare-two.vercel.app',
+]);
+
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .forEach(origin => corsOrigins.add(origin));
+}
+
+function corsOptions(req, callback) {
+  const requestOrigin = req.header('Origin');
+  if (!requestOrigin) {
+    callback(null, { origin: false });
+    return;
+  }
+
+  callback(null, {
+    origin: corsOrigins.has(requestOrigin) ? requestOrigin : false,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
+    optionsSuccessStatus: 204,
+  });
+}
 
 function getAppOrigin(req) {
   const origin = req.get('origin');
   if (origin) return origin;
-  if (Array.isArray(corsOrigins) && corsOrigins.length > 0) return corsOrigins[0];
+  if (corsOrigins.size > 0) return Array.from(corsOrigins)[0];
   return `${req.protocol}://${req.get('host')}`;
 }
 
 const io = new Server(httpServer, {
   cors: {
-    origin: corsOrigins,
+    origin: Array.from(corsOrigins),
     methods: ['GET', 'POST'],
   },
   maxHttpBufferSize: 1e8, // 100 MB socket buffer
 });
 
-app.use(cors({ origin: corsOrigins }));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // In-memory session store (use Redis in production)
