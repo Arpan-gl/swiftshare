@@ -24,6 +24,7 @@ export function useReceiver(transferId) {
   const chunksRef = useRef({}); // chunkId → ArrayBuffer (in-memory small cache)
   const receivedCount = useRef(0);
   const totalChunksRef = useRef(0);
+  const pendingChunkWritesRef = useRef(0);
   const pendingHeadersRef = useRef({}); // dataChannel label -> header for next binary chunk
   const checkpointTimer = useRef(null);
 
@@ -171,6 +172,7 @@ export function useReceiver(transferId) {
       delete pendingHeadersRef.current[channelLabel];
 
       const chunkId = header.chunkId;
+      pendingChunkWritesRef.current += 1;
 
       // Verify SHA-256 (async, non-blocking)
       sha256(e.data).then(async (hash) => {
@@ -194,6 +196,8 @@ export function useReceiver(transferId) {
       }).catch((err) => {
         setError(err?.message || 'Failed while processing incoming chunk.');
         setStatus('error');
+      }).finally(() => {
+        pendingChunkWritesRef.current = Math.max(0, pendingChunkWritesRef.current - 1);
       });
     }
   }
@@ -201,39 +205,54 @@ export function useReceiver(transferId) {
   async function handleControlMessage(e) {
     const msg = JSON.parse(e.data);
     if (msg.type === 'done') {
-      clearInterval(checkpointTimer.current);
-      setStatus('verifying');
-      setStatusText('Verifying file integrity…');
+      try {
+        clearInterval(checkpointTimer.current);
+        setStatus('verifying');
+        setStatusText('Verifying file integrity…');
 
-      // Load all chunks from IndexedDB in order
-      await new Promise(r => setTimeout(r, 300));
+        const totalChunks = totalChunksRef.current || sessionMeta.totalChunks;
+        const waitForAllChunks = async () => {
+          const deadline = Date.now() + 30000;
+          while (Date.now() < deadline) {
+            const existingIds = await storeRef.current.getAllChunkIds();
+            if (existingIds.length >= totalChunks && pendingChunkWritesRef.current === 0) {
+              return;
+            }
+            setStatusText(`Finalizing chunks… ${existingIds.length} of ${totalChunks} ready`);
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          throw new Error('Timed out while waiting for all chunks to finish saving.');
+        };
 
-      setStatusText('Assembling file…');
-      await new Promise(r => setTimeout(r, 200));
+        await waitForAllChunks();
 
-      // Assemble from IndexedDB
-      const totalChunks = totalChunksRef.current || sessionMeta.totalChunks;
-      const allChunks = [];
-      for (let i = 0; i < totalChunks; i++) {
-        const chunk = chunksRef.current[i] || await storeRef.current.getChunk(i);
-        if (chunk) allChunks.push(chunk);
+        setStatusText('Assembling file…');
+
+        // Assemble from IndexedDB in exact chunk order.
+        const allChunks = new Array(totalChunks);
+        for (let i = 0; i < totalChunks; i++) {
+          allChunks[i] = chunksRef.current[i] || await storeRef.current.getChunk(i);
+        }
+
+        assembleAndDownload(
+          allChunks,
+          totalChunks,
+          sessionMeta.fileName,
+          sessionMeta.mimeType
+        );
+
+        // Clean up IndexedDB after successful download
+        await storeRef.current.destroy();
+        chunksRef.current = {};
+
+        setStatus('done');
+        setProgress(100);
+        setStatusText('Download complete — file saved to your device.');
+        socket.current.emit('transfer:complete', { transferId });
+      } catch (err) {
+        setError(err?.message || 'Failed while assembling the download.');
+        setStatus('error');
       }
-
-      assembleAndDownload(
-        allChunks,
-        totalChunks,
-        sessionMeta.fileName,
-        sessionMeta.mimeType
-      );
-
-      // Clean up IndexedDB after successful download
-      await storeRef.current.destroy();
-      chunksRef.current = {};
-
-      setStatus('done');
-      setProgress(100);
-      setStatusText('Download complete — file saved to your device.');
-      socket.current.emit('transfer:complete', { transferId });
     }
   }
 

@@ -153,7 +153,11 @@ export class ChunkStore {
 export function assembleAndDownload(chunks, totalChunks, fileName, mimeType) {
   const orderedChunks = [];
   for (let i = 0; i < totalChunks; i++) {
-    if (chunks[i]) orderedChunks.push(chunks[i]);
+    const chunk = chunks[i];
+    if (!chunk) {
+      throw new Error(`Missing chunk ${i + 1} of ${totalChunks}. Download cannot be assembled yet.`);
+    }
+    orderedChunks.push(chunk);
   }
   const blob = new Blob(orderedChunks, { type: mimeType || 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
