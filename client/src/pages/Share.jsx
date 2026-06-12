@@ -43,7 +43,7 @@ export default function Share() {
   const activePeers = peerList.filter(([, p]) => p.status !== 'disconnected');
 
   return (
-    <div className="page">
+    <div className="page" id="share-page">
       <div className="share-wrap">
         <h1 className="page-title">Your link is ready</h1>
         <p className="page-sub">
@@ -51,7 +51,7 @@ export default function Share() {
         </p>
 
         {file && (
-          <div className="file-card">
+          <div className="file-card" id="share-file-card">
             <div className="fc-type">{getFileIcon(file.name)}</div>
             <div>
               <div className="fc-name">{file.name}</div>
@@ -60,17 +60,17 @@ export default function Share() {
           </div>
         )}
 
-        <div className="url-row">
+        <div className="url-row" id="share-url-row">
           <span title={shareUrl}>{shareUrl}</span>
-          <button className="btn-copy" onClick={copyUrl}>
+          <button className="btn-copy" onClick={copyUrl} id="copy-link-btn">
             {copied ? (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
                 Copied!
               </>
             ) : (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                 Copy link
               </>
             )}
@@ -79,13 +79,13 @@ export default function Share() {
         <p className="url-note">Link expires in 48 hours · Transfers are end-to-end encrypted</p>
 
         {error && (
-          <div className="alert alert-err">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div className="alert alert-err" id="share-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
             {error}
           </div>
         )}
 
-        <div className="status-panel">
+        <div className="status-panel" id="status-panel">
           <div className="sp-header">
             <span className="sp-header-title">Connection status</span>
             <span className="sp-header-sub">
@@ -97,7 +97,15 @@ export default function Share() {
           <div className="sp-body">
             {peerList.length === 0 ? (
               <div className="waiting-state">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/><path d="M5 12.55a10.94 10.94 0 015.17-2.39"/><path d="M10.71 5.05A16 16 0 0122.56 9"/><path d="M1.42 9a15.91 15.91 0 014.7-2.88"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <path d="M16.72 11.06A10.94 10.94 0 0119 12.55" />
+                  <path d="M5 12.55a10.94 10.94 0 015.17-2.39" />
+                  <path d="M10.71 5.05A16 16 0 0122.56 9" />
+                  <path d="M1.42 9a15.91 15.91 0 014.7-2.88" />
+                  <path d="M8.53 16.11a6 6 0 016.95 0" />
+                  <line x1="12" y1="20" x2="12.01" y2="20" />
+                </svg>
                 <strong>Waiting for someone to open the link…</strong>
                 <span>Keep this tab open while sharing</span>
               </div>
@@ -126,12 +134,12 @@ export default function Share() {
           </div>
         </div>
 
-        <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => navigate('/')}>
+        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+          <button className="btn-ghost" onClick={() => navigate('/')} id="share-another-btn">
             + Share another file
           </button>
           {status === 'done' && (
-            <button className="btn-primary" onClick={() => navigate('/history')}>
+            <button className="btn-primary" onClick={() => navigate('/history')} id="view-history-btn">
               View history
             </button>
           )}

@@ -13,7 +13,7 @@ export default function History() {
   };
 
   return (
-    <div className="page">
+    <div className="page" id="history-page">
       <div className="history-wrap">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <div>
@@ -21,31 +21,39 @@ export default function History() {
             <p className="page-sub" style={{ marginBottom: 0 }}>All your active and past transfers.</p>
           </div>
           {history.length > 0 && (
-            <button className="btn-ghost" onClick={clearHistory} style={{ fontSize: 12 }}>
+            <button className="btn-ghost" onClick={clearHistory} style={{ fontSize: 12 }} id="clear-history-btn">
               Clear all
             </button>
           )}
         </div>
 
         {history.length === 0 ? (
-          <div className="history-empty">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3, margin: '0 auto 12px' }} aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <div className="history-empty" id="history-empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3, margin: '0 auto 12px' }} aria-hidden="true">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
             <p>No transfers yet. Share a file to get started.</p>
           </div>
         ) : (
-          <div className="history-table">
+          <div className="history-table" id="history-table">
             <div className="history-row header">
               <span>File</span>
               <span className="col-size">Size</span>
               <span className="col-date">Shared</span>
               <span>Status</span>
             </div>
-            {history.map((entry) => (
-              <div className="history-row" key={entry.transferId}>
+            {history.map((entry, i) => (
+              <div
+                className="history-row"
+                key={entry.transferId}
+                style={{ animationDelay: `${i * 0.04}s` }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   <span style={{ fontSize: 18 }}>{getFileIcon(entry.fileName)}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-1)' }}>
                       {entry.fileName}
                     </div>
                     {entry.shareUrl && !isExpired(entry) && (
@@ -53,7 +61,7 @@ export default function History() {
                         href={entry.shareUrl}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: 11, color: 'var(--green-600)' }}
+                        style={{ fontSize: 11, color: 'var(--accent)' }}
                       >
                         Open link ↗
                       </a>
