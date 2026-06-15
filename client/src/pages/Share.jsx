@@ -3,24 +3,34 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useSender } from '../hooks/useSender';
 import { useHistory } from '../context/HistoryContext';
 import { formatSize, getFileIcon } from '../utils/fileUtils';
+import RadiatingBackground from '../components/RadiatingBackground';
 
 export default function Share() {
-  const { transferId } = useParams();
-  const { state } = useLocation();
-  const navigate = useNavigate();
+  const { transferId }   = useParams();
+  const { state }        = useLocation();
+  const navigate         = useNavigate();
   const { status, shareUrl: hookUrl, peers, error, primeTransfer, registerSender } = useSender();
   const { updateTransfer } = useHistory();
   const [copied, setCopied] = useState(false);
 
-  const file = state?.file;
+  const file     = state?.file;
   const shareUrl = state?.shareUrl || hookUrl || window.location.href;
 
-  // If page refreshed without state, redirect home
+  /* ── derive transfer progress from peers ── */
+  const peerList    = Object.entries(peers);
+  const activePeers = peerList.filter(([, p]) => p.status !== 'disconnected');
+  const maxPct      = activePeers.length > 0
+    ? Math.max(...activePeers.map(([, p]) => p.pct || 0))
+    : 0;
+  const isTransferring = status === 'transferring';
+  const isDone         = status === 'done';
+  const isActive       = isTransferring || (activePeers.length > 0 && !isDone);
+
+  /* redirect home if no file + no transferId */
   useEffect(() => {
     if (!file && !transferId) navigate('/');
   }, [file, transferId, navigate]);
 
-  // Register sender when this component mounts (handles refresh case)
   useEffect(() => {
     if (!transferId) return;
     primeTransfer(file, transferId, state?.shareUrl);
@@ -28,10 +38,8 @@ export default function Share() {
   }, [file, transferId, state?.shareUrl, primeTransfer, registerSender]);
 
   useEffect(() => {
-    if (status === 'done') {
-      updateTransfer(transferId, { status: 'done' });
-    }
-  }, [status, transferId]);
+    if (isDone) updateTransfer(transferId, { status: 'done' });
+  }, [isDone, transferId]);
 
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl).catch(() => {});
@@ -39,17 +47,22 @@ export default function Share() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const peerList = Object.entries(peers);
-  const activePeers = peerList.filter(([, p]) => p.status !== 'disconnected');
-
   return (
     <div className="page" id="share-page">
+      {/* ── Radiating lines: flows BOTTOM → TOP for sender ── */}
+      <RadiatingBackground
+        isActive={isActive}
+        progress={isDone ? 100 : maxPct}
+        direction="up"
+      />
+
       <div className="share-wrap">
         <h1 className="page-title">Your link is ready</h1>
         <p className="page-sub">
           Share this link — anyone with it can download the file directly from your device.
         </p>
 
+        {/* File card */}
         {file && (
           <div className="file-card" id="share-file-card">
             <div className="fc-type">{getFileIcon(file.name)}</div>
@@ -60,17 +73,23 @@ export default function Share() {
           </div>
         )}
 
+        {/* URL row */}
         <div className="url-row" id="share-url-row">
           <span title={shareUrl}>{shareUrl}</span>
-          <button className="btn-copy" onClick={copyUrl} id="copy-link-btn">
+          <button className={`btn-copy${copied ? ' copied' : ''}`} onClick={copyUrl} id="copy-link-btn">
             {copied ? (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 Copied!
               </>
             ) : (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
                 Copy link
               </>
             )}
@@ -78,13 +97,27 @@ export default function Share() {
         </div>
         <p className="url-note">Link expires in 48 hours · Transfers are end-to-end encrypted</p>
 
+        {/* Error */}
         {error && (
           <div className="alert alert-err" id="share-error">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             {error}
           </div>
         )}
 
+        {/* Transfer status badge when active */}
+        {isActive && !isDone && (
+          <div className="transfer-badge" id="transfer-badge">
+            <span className="pulse-dot" />
+            Transferring · {maxPct}%
+          </div>
+        )}
+
+        {/* Status panel */}
         <div className="status-panel" id="status-panel">
           <div className="sp-header">
             <span className="sp-header-title">Connection status</span>
@@ -112,13 +145,11 @@ export default function Share() {
             ) : (
               peerList.map(([id, peer]) => (
                 <div className="peer-row" key={id}>
-                  <div
-                    className={`dot ${
-                      peer.status === 'connected' || peer.status === 'done' ? 'dot-green'
-                      : peer.status === 'disconnected' ? 'dot-gray'
-                      : 'dot-amber'
-                    }`}
-                  />
+                  <div className={`dot ${
+                    peer.status === 'connected' || peer.status === 'done' ? 'dot-green'
+                    : peer.status === 'disconnected' ? 'dot-gray'
+                    : 'dot-amber'
+                  }`} />
                   <span className="peer-label">
                     {peer.status === 'done' ? 'Complete' : peer.status === 'disconnected' ? 'Left' : 'Receiver'}
                   </span>
@@ -138,7 +169,7 @@ export default function Share() {
           <button className="btn-ghost" onClick={() => navigate('/')} id="share-another-btn">
             + Share another file
           </button>
-          {status === 'done' && (
+          {isDone && (
             <button className="btn-primary" onClick={() => navigate('/history')} id="view-history-btn">
               View history
             </button>

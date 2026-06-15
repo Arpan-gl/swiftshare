@@ -11,10 +11,10 @@ function AnimatedRoutes() {
   return (
     <div className="page-transition" key={location.pathname}>
       <Routes location={location}>
-        <Route path="/" element={<Home />} />
-        <Route path="/share/:transferId" element={<Share />} />
+        <Route path="/"                     element={<Home />} />
+        <Route path="/share/:transferId"    element={<Share />} />
         <Route path="/download/:transferId" element={<Download />} />
-        <Route path="/history" element={<History />} />
+        <Route path="/history"              element={<History />} />
       </Routes>
     </div>
   );
@@ -24,7 +24,6 @@ export default function App() {
   return (
     <HistoryProvider>
       <BrowserRouter>
-        <div className="app-bg" aria-hidden="true" />
         <Nav />
         <AnimatedRoutes />
       </BrowserRouter>
